@@ -12,9 +12,9 @@ console.log(' PIT deciles', bt.pit.join(' '));
 const t = tomorrowPlan(data);
 const s = t.summary;
 console.log('TOMORROW', data.tomorrow.date, data.tomorrow.note, 'cal n', t.nCal);
-console.log(' at risk (<90%) dispatcher', s.atRiskHome, 'recommended', s.atRiskRec);
+console.log(' at risk (<90%) dispatcher', s.atRiskHome, 'recommended', s.atRiskRec, 'at-risk cleared by range readout', s.atRiskClearedByReadout);
 console.log(' expected midday charges', s.expectedMiddayHome.toFixed(2), '->', s.expectedMiddayRec.toFixed(3));
 console.log(' min P', s.minPHome.toFixed(3), '->', s.minPRec.toFixed(3), 'swaps', s.swaps, 'reachable', s.allReachable);
 console.log(' charge kWh tonight default', s.chargeKwhDefault.toFixed(0), 'recommended', s.chargeKwhRec.toFixed(0), 'below 90%:', s.below90Rec);
-for (const r of t.rows) console.log(' ', r.route, r.homeTruck, r.truck, r.swapped ? 'SWAP' : '    ', 'pHome', r.pHome.toFixed(3), 'pRec', r.pRec.toFixed(3), 'chargeTo', r.chargeTo, 'mu', r.muKwh.toFixed(1), 'availHome', r.availHome.toFixed(1), 'miles', r.miles, 'stops', r.stops);
+for (const r of t.rows) console.log(' ', r.route, r.homeTruck, r.truck, r.swapped ? 'SWAP' : '    ', 'pHome', r.pHome.toFixed(3), 'pRec', r.pRec.toFixed(3), 'chargeTo', r.chargeTo, 'mu', r.muKwh.toFixed(1), 'availHome', r.availHome.toFixed(1), 'miles', r.miles, 'stops', r.stops, 'readout mi', r.rangeReadoutMiles.toFixed(0), r.rangeReadoutOk);
 for (const tr of data.trucks) { const c = t.caps[tr.id]; console.log(' cap', tr.id, tr.packs, c.kwh.toFixed(1), '+-', c.se.toFixed(2), 'true', truth.capacityKwh[tr.id]); }

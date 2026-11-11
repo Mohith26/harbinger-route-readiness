@@ -91,6 +91,12 @@ export function tomorrowPlan(data, { target = 0.99, defaultSoc = 0.9 } = {}) {
   // finish probability for every (route, truck) pair at 100% departure SoC: what is feasible
   const P100 = plan.map((p) => trucks.map((t) => finishProbability(model, scores, p, t, caps[t.id], 1.0)));
   const assign = planAssignment(P100, home);
+  // what a remaining-range readout says tonight: SoC x capacity / trailing 7-day kWh per mile
+  const trailing = {};
+  for (const t of trucks) {
+    const prev = data.trips.filter((x) => x.truck === t.id).slice(-7);
+    trailing[t.id] = prev.reduce((a, x) => a + x.kwh, 0) / prev.reduce((a, x) => a + x.milesActual, 0);
+  }
   const rows = plan.map((p, r) => {
     const hTruck = trucks[home[r]], rTruck = trucks[assign[r]];
     const pred = predict(model, p, rTruck);
@@ -104,6 +110,8 @@ export function tomorrowPlan(data, { target = 0.99, defaultSoc = 0.9 } = {}) {
       route: p.route, miles: p.miles, stops: p.stops, payloadT: p.payloadT, climbM: p.climbM, tempC: p.tempC,
       homeTruck: hTruck.id, truck: rTruck.id, swapped: hTruck.id !== rTruck.id,
       pHome, pRec, chargeTo, reachable: chargeTo !== null,
+      rangeReadoutMiles: (caps[hTruck.id].kwh * (defaultSoc - RESERVE_SOC)) / trailing[hTruck.id],
+      rangeReadoutOk: naiveRangeOk(p, hTruck, trailing[hTruck.id], caps[hTruck.id].kwh, defaultSoc, RESERVE_SOC),
       muKwh: pred.mu, needP95Home: needHome, needAtTarget: need,
       availHome: caps[hTruck.id].kwh * (defaultSoc - RESERVE_SOC),
       availRec: caps[rTruck.id].kwh * (soc - RESERVE_SOC),
@@ -118,6 +126,7 @@ export function tomorrowPlan(data, { target = 0.99, defaultSoc = 0.9 } = {}) {
     routes: rows.length,
     atRiskHome: rows.filter((r) => r.pHome < 0.9).length,
     atRiskRec: rows.filter((r) => r.pRec < 0.9).length,
+    atRiskClearedByReadout: rows.filter((r) => r.pHome < 0.9 && r.rangeReadoutOk).length,
     expectedMiddayHome: sum((r) => 1 - r.pHome),
     expectedMiddayRec: sum((r) => 1 - r.pRec),
     minPHome: Math.min(...rows.map((r) => r.pHome)),

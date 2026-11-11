@@ -165,7 +165,7 @@ button, input, select { font-family: inherit; }
 .contrib .b i { position: absolute; left: 0; top: 0; bottom: 0; background: #9fb6be; border-radius: 4px; }
 .contrib .b i.cold { background: #7fb3d5; }
 .contrib .num { text-align: right; font-variant-numeric: tabular-nums; }
-.alist { font-size: 12px; line-height: 1.5; padding: 0 14px 12px; margin: 0; color: #333; }
+.alist { font-size: 12px; line-height: 1.5; padding: 0 16px 12px 32px; margin: 0; color: #333; }
 .alist li { margin: 6px 0; }
 .mini { font-size: 11px; color: var(--muted); margin-top: 6px; line-height: 1.45; }
 svg text { font-family: Inter, sans-serif; }

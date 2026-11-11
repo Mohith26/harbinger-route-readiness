@@ -4,7 +4,7 @@ import { predict, energyQuantile, finishProbability, contributions, RESERVE_SOC 
 const $ = (s) => document.querySelector(s);
 const fmt = (v, d = 0) => v.toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
 const pct = (p, d = 0) => (p >= 0.9995 && d === 0 ? '>99' : fmt(p * 100, d)) + '%';
-const pctP = (p) => (p >= 0.995 ? fmt(p * 100, 1) : fmt(p * 100, p < 0.1 ? 1 : 0)) + '%';
+const pctP = (p) => (p >= 0.95 ? fmt(Math.floor(p * 1000) / 10, 1) : fmt(p * 100, 0)) + '%';
 const cls = (p) => (p >= 0.95 ? 'ok' : p >= 0.8 ? 'warn' : 'bad');
 
 const params = new URLSearchParams(location.search);
@@ -90,7 +90,7 @@ function renderKpis() {
   const worst = disp ? s.minPHome : s.minPRec;
   const exp = disp ? s.expectedMiddayHome : s.expectedMiddayRec;
   $('#kpis').innerHTML =
-    k(`<span class="${below ? 'bad' : 'ok'}">${below}</span>`, 'Routes under 90%', disp ? 'cleared by range readout' : `was ${s.atRiskHome} on dispatcher plan`, disp) +
+    k(`<span class="${below ? 'bad' : 'ok'}">${below}</span>`, 'Routes under 90%', disp ? `${s.atRiskClearedByReadout} of ${s.atRiskHome} look fine on range readout` : `was ${s.atRiskHome} on dispatcher plan`, disp) +
     k(`<span class="${cls(worst)}">${pctP(worst)}</span>`, 'Worst route finishes', disp ? 'route R-' + worstRoute().slice(2) : `was ${pctP(s.minPHome)}`, disp) +
     k(fmt(exp, 2), 'Expected midday charges', disp ? 'sum of (1 − P) over routes' : `was ${fmt(s.expectedMiddayHome, 2)}`, disp) +
     k(disp ? '0' : String(s.swaps), 'Vans swapped', disp ? 'standing assignment' : `${s.below90Rec} vans charge to under 90%`, disp);
@@ -184,6 +184,7 @@ function renderDetail() {
   const maxC = Math.max(...contrib.map((c) => Math.abs(c.kwh)));
   const alerts = [];
   if (r.pHome < 0.9) alerts.push(`Dispatcher plan (${r.homeTruck} at 90%) finishes with ≥10% only <b>${pctP(r.pHome)}</b> of the time.`);
+  if (r.pHome < 0.9 && r.rangeReadoutOk) alerts.push(`Tonight's range readout for ${r.homeTruck} says ${fmt(r.rangeReadoutMiles)} mi to 10% for a ${fmt(r.miles)} mi route, so it looks fine.`);
   if (!disp && r.swapped) {
     const other = P.rows.find((x) => x.homeTruck === r.truck);
     alerts.push(`Swap: <b>${r.truck}</b> (${trucksById[r.truck].packs} packs) takes ${r.route}; ${r.homeTruck} moves to ${P.rows.find((x) => x.truck === r.homeTruck)?.route ?? '—'}.`);
@@ -228,7 +229,7 @@ function renderDetail() {
 }
 
 function capSvg(sessions, cap) {
-  const W = 330, H = 120, pad = 26;
+  const W = 580, H = 130, pad = 30;
   const xs = sessions.map((s) => s.socEnd - s.socStart), ys = sessions.map((s) => s.kwhIn);
   const xmax = Math.max(...xs) * 1.05, ymax = Math.max(...ys) * 1.05;
   const X = (x) => pad + (x / xmax) * (W - pad - 8), Y = (y) => H - 18 - (y / ymax) * (H - 28);
@@ -238,8 +239,8 @@ function capSvg(sessions, cap) {
     <line x1="${pad}" y1="8" x2="${pad}" y2="${H - 18}" stroke="#e2e2e2"/>
     <line x1="${X(0)}" y1="${Y(0)}" x2="${X(xmax)}" y2="${Y(cap.kwh * xmax)}" stroke="#e5a128" stroke-width="2"/>
     ${pts}
-    <text x="${W - 8}" y="${H - 4}" font-size="9.5" text-anchor="end" fill="#6d6d6d">ΔSoC per session</text>
-    <text x="${pad + 4}" y="14" font-size="9.5" fill="#6d6d6d">kWh in</text>
+    <text x="${W - 8}" y="${H - 4}" font-size="11" text-anchor="end" fill="#6d6d6d">ΔSoC per session</text>
+    <text x="${pad + 6}" y="16" font-size="11" fill="#6d6d6d">kWh in</text>
   </svg>`;
 }
 
@@ -283,8 +284,8 @@ function renderDayCard() {
     el.innerHTML = `<div class="top"><span class="date">Friday, November 20, 2026</span><span class="live">Cold front</span></div>
       <div class="dc-grid"><div><div class="dc-h">Energy forecast · ${r.route} on ${v.truck.id}</div>${energySvg(r, v)}</div>
       <div><div class="dc-h">Route plan</div><div class="dc-note"><b>${fmt(v.planRow.miles, 1)} mi</b> · <b>${v.planRow.stops}</b> stops · <b>${fmt(v.planRow.payloadT, 1)} t</b> payload · <b>${v.planRow.climbM} m</b> climb · ${fmt(v.planRow.tempC)}°C<br/>
-      Distribution is the model's forecast plus ${P.nCal} calibration residuals from the last 7 weeks, scaled to this route. The probability counts how many land under the available energy. Map: outline through the stop clusters.</div>
-      <div class="legend" style="margin-top:10px"><span style="--c:#b9c9cf">forecast kWh</span><span style="--c:#024c5e">available</span><span style="--c:#e5a128">need p${fmt(state.target * 100, state.target === 0.975 ? 1 : 0)}</span></div></div></div>`;
+      Forecast plus ${P.nCal} calibration residuals from the last 7 weeks, scaled to this route. Finish probability is the share that lands under the available energy.</div>
+      <div class="legend" style="margin-top:8px"><span style="--c:#b9c9cf">forecast kWh</span><span style="--c:#024c5e">available</span><span style="--c:#e5a128">need p${fmt(state.target * 100, state.target === 0.975 ? 1 : 0)}</span></div><div class="mini">Map: outline through the route's stop clusters.</div></div></div>`;
   } else {
     const disp = state.plan === 'dispatcher';
     const lo = 0.35;
@@ -302,7 +303,7 @@ function renderDayCard() {
 }
 
 function energySvg(r, v) {
-  const W = 360, H = 112, pad = 6;
+  const W = 300, H = 112, pad = 6;
   const { mu, sigma } = predict(P.model, v.planRow, v.truck);
   const samples = P.scores.map((s) => mu + sigma * s);
   const lo = Math.min(...samples, v.avail) - 4, hi = Math.max(...samples, v.avail, v.need) + 4;
@@ -318,7 +319,7 @@ function energySvg(r, v) {
     <line x1="${pad}" x2="${W - pad}" y1="${H - 22}" y2="${H - 22}" stroke="#cfcfcf"/>
     <line x1="${X(v.avail)}" x2="${X(v.avail)}" y1="6" y2="${H - 22}" stroke="#024c5e" stroke-width="2"/>
     <line x1="${X(v.need)}" x2="${X(v.need)}" y1="6" y2="${H - 22}" stroke="#e5a128" stroke-width="2" stroke-dasharray="4 3"/>
-    <text x="${X(v.avail) + 4}" y="14" font-size="10" fill="#024c5e">${fmt(v.avail)} kWh</text>
+    <text x="${X(v.avail) + (X(v.avail) > W - 60 ? -4 : 4)}" y="14" font-size="10" text-anchor="${X(v.avail) > W - 60 ? 'end' : 'start'}" fill="#024c5e">${fmt(v.avail)} kWh available</text>
     ${ticks}</svg>`;
 }
 
