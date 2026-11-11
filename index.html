@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Route Readiness · Harbinger Telematics (concept)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..24,400,0..1,0&display=block" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app">
+    <aside class="nav">
+      <div class="nav-title">Fleet Management</div>
+      <a class="nav-item" href="#"><span class="ms">directions_car</span>Vehicles</a>
+      <a class="nav-item" href="#"><span class="ms">format_list_bulleted</span>Events</a>
+      <a class="nav-item active" href="#"><span class="ms">route</span>Route Readiness</a>
+      <div class="nav-spacer"></div>
+      <div class="nav-user"><span>Jane Doe</span><span class="ms">chevron_right</span></div>
+    </aside>
+
+    <main class="panel" id="panel">
+      <section id="listView">
+        <div class="search"><input id="search" placeholder="Search a route or vehicle..." /><span class="ms">search</span></div>
+        <div class="page-head">
+          <div>
+            <h1>Route Readiness</h1>
+            <div class="sub" id="subline"></div>
+          </div>
+          <label class="target">Target
+            <select id="target">
+              <option value="0.95">95%</option>
+              <option value="0.975">97.5%</option>
+              <option value="0.99" selected>99%</option>
+            </select>
+          </label>
+        </div>
+        <div class="seg" id="planSeg">
+          <button data-plan="dispatcher">Dispatcher plan</button>
+          <button data-plan="recommended" class="on">Recommended</button>
+        </div>
+        <div class="kpis" id="kpis"></div>
+        <div class="filters">
+          <button class="pill" data-f="risk">At risk</button>
+          <button class="pill" data-f="swapped">Swapped</button>
+          <button class="pill on" data-f="all">All</button>
+          <span class="grow"></span>
+          <span class="ms icon-btn" title="Filter">filter_alt</span>
+          <span class="ms icon-btn" title="Sort">sort</span>
+        </div>
+        <div class="thead"><span>Route</span><span>Vehicle</span><span>Finish</span><span id="needHead">Need</span><span>Charge to</span><span></span></div>
+        <div class="tbody" id="rows"></div>
+      </section>
+
+      <section id="detailView" hidden></section>
+      <footer class="foot">Unofficial concept demo by Mohith Gajjela. Not affiliated with Harbinger. Synthetic data.</footer>
+    </main>
+
+    <section class="mapwrap">
+      <div id="map"></div>
+      <div class="daycard" id="daycard"></div>
+    </section>
+  </div>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
